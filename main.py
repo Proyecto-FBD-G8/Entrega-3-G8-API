@@ -259,7 +259,6 @@ def historial_cliente(cliente_id: str, orden: str = Query("fecha", enum=["fecha"
 # RF7 – Responder reseña (admin)
 @app.post("/hoteles/{hotel_id}/resenas/{resena_id}/respuesta")
 def responder_resena(hotel_id: str, resena_id: str, datos: dict):
-    import logging
     hotel_exists(hotel_id)
     _id = parse_id(hotel_id)
 
@@ -271,8 +270,7 @@ def responder_resena(hotel_id: str, resena_id: str, datos: dict):
         raise HTTPException(status_code=400, detail="adminId, administrador y respuesta son obligatorios")
 
     ahora = datetime.utcnow().isoformat() + "Z"
-    logging.warning(f"Buscando: _id={_id}, resenaId={resena_id}, adminId={admin_id}")
-    
+
     hotel = hoteles_col.find_one({
         "_id": _id,
         "resenas": {
@@ -282,7 +280,6 @@ def responder_resena(hotel_id: str, resena_id: str, datos: dict):
             }
         }
     })
-    logging.warning(f"hotel encontrado: {hotel is not None}")
 
     if hotel:
         hoteles_col.update_one(
@@ -295,7 +292,7 @@ def responder_resena(hotel_id: str, resena_id: str, datos: dict):
         )
         return {"mensaje": "Respuesta actualizada"}
     else:
-        resultado = hoteles_col.update_one(
+        hoteles_col.update_one(
             {"_id": _id},
             {"$push": {"resenas.$[elem].respuestas": {
                 "respuesta": respuesta, "administrador": admin_name,
@@ -303,7 +300,6 @@ def responder_resena(hotel_id: str, resena_id: str, datos: dict):
             }}},
             array_filters=[{"elem.resenaId": resena_id}]
         )
-        logging.warning(f"matched: {resultado.matched_count}, modified: {resultado.modified_count}")
         return {"mensaje": "Respuesta agregada"}
 
 
@@ -313,12 +309,21 @@ def eliminar_resena_admin(hotel_id: str, resena_id: str, adminId: str = Query(..
     hotel_exists(hotel_id)
     _id = parse_id(hotel_id)
 
-    hotel = hoteles_col.find_one({"_id": _id, "administradorEnControl.idAdmin": str(adminId)})
+    hotel = hoteles_col.find_one({
+        "_id": _id,
+        "resenas": {
+            "$elemMatch": {
+                "resenaId": resena_id
+            }
+        },
+        "administradorEnControl.idAdmin": str(adminId)
+    })
     if not hotel:
-        raise HTTPException(status_code=403, detail="No tienes permiso sobre este hotel")
+        raise HTTPException(status_code=403, detail="No tienes permiso sobre este hotel o reseña no encontrada")
 
     resultado = hoteles_col.update_one(
-        {"_id": _id}, {"$set": {"resenas.$[elem].publico": False}},
+        {"_id": _id},
+        {"$set": {"resenas.$[elem].publico": False}},
         array_filters=[{"elem.resenaId": resena_id}]
     )
     if resultado.modified_count == 0:
@@ -333,13 +338,20 @@ def destacar_resena(hotel_id: str, resena_id: str, datos: dict):
     _id = parse_id(hotel_id)
 
     admin_id = str(datos.get("adminId", ""))
-    hotel_admin = hoteles_col.find_one({"_id": _id, "administradorEnControl.idAdmin": admin_id})
+    hotel_admin = hoteles_col.find_one({
+        "_id": _id,
+        "administradorEnControl.idAdmin": admin_id
+    })
     if not hotel_admin:
         raise HTTPException(status_code=403, detail="No tienes permiso sobre este hotel")
 
-    hoteles_col.update_one({"_id": _id}, {"$set": {"resenas.$[].destacada": False}})
+    hoteles_col.update_one(
+        {"_id": _id},
+        {"$set": {"resenas.$[].destacada": False}}
+    )
     resultado = hoteles_col.update_one(
-        {"_id": _id}, {"$set": {"resenas.$[elem].destacada": True}},
+        {"_id": _id},
+        {"$set": {"resenas.$[elem].destacada": True}},
         array_filters=[{"elem.resenaId": resena_id}]
     )
     if resultado.modified_count == 0:
