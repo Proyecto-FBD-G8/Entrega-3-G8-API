@@ -28,21 +28,11 @@ admins_col        = db["administradores"]
 
 # ── HELPERS ──────────────────────────────────────────────────
 
-@app.post("/test-insert/{hotel_id}")
-def test_insert(hotel_id: str):
-    try:
-        _id = int(hotel_id)
-    except ValueError:
-        _id = hotel_id
-    
-    resultado = hoteles_col.update_one(
-        {"_id": _id},
-        {"$push": {"resenas": {"test": "prueba"}}}
-    )
-    return {
-        "matched": resultado.matched_count,
-        "modified": resultado.modified_count
-    }
+@app.post("/hoteles/{hotel_id}/resenas")
+def crear_resena(hotel_id: str, datos: dict):
+    import logging
+    logging.warning(f"Datos recibidos: {datos}")
+    ...
     
 def hotel_exists(hotel_id: str):
     try:
