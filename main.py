@@ -28,11 +28,7 @@ admins_col        = db["administradores"]
 
 # ── HELPERS ──────────────────────────────────────────────────
 
-@app.post("/hoteles/{hotel_id}/resenas")
-def crear_resena(hotel_id: str, datos: dict):
-    import logging
-    logging.warning(f"Datos recibidos: {datos}")
-    ...
+
     
 def hotel_exists(hotel_id: str):
     try:
@@ -90,8 +86,11 @@ def crear_resena(hotel_id: str, datos: dict):
         if campo not in datos:
             raise HTTPException(status_code=400, detail=f"Campo obligatorio faltante: {campo}")
 
-    nota = datos.get("nota")
-    if not isinstance(nota, int) or nota < 1 or nota > 5:
+    try:
+        nota = int(datos.get("nota"))
+    except (TypeError, ValueError):
+        raise HTTPException(status_code=400, detail="nota debe ser un entero entre 1 y 5")
+    if nota < 1 or nota > 5:
         raise HTTPException(status_code=400, detail="nota debe ser un entero entre 1 y 5")
 
     ahora = datetime.utcnow().isoformat() + "Z"
