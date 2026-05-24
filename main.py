@@ -97,11 +97,9 @@ def crear_resena(hotel_id: str, datos: dict):
             "respuestas":       []
         }
 
-        logging.warning(f"nueva_resena: {nueva_resena}")
         resultado = hoteles_col.update_one({"_id": _id}, {"$push": {"resenas": nueva_resena}})
-        logging.warning(f"matched: {resultado.matched_count}, modified: {resultado.modified_count}")
         return {"mensaje": "Reseña creada", "resenaId": resena_id}
-
+    
     except HTTPException:
         raise
     except Exception as e:
