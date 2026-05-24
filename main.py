@@ -272,7 +272,16 @@ def responder_resena(hotel_id: str, resena_id: str, datos: dict):
 
     ahora = datetime.utcnow().isoformat() + "Z"
     logging.warning(f"Buscando: _id={_id}, resenaId={resena_id}, adminId={admin_id}")
-    hotel = hoteles_col.find_one({"_id": _id, "resenas.resenaId": resena_id, "resenas.respuestas.adminId": admin_id})
+    
+    hotel = hoteles_col.find_one({
+        "_id": _id,
+        "resenas": {
+            "$elemMatch": {
+                "resenaId": resena_id,
+                "respuestas.adminId": admin_id
+            }
+        }
+    })
     logging.warning(f"hotel encontrado: {hotel is not None}")
 
     if hotel:
