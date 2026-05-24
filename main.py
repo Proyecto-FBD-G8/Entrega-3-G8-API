@@ -51,53 +51,63 @@ def root():
     return {"estado": "API Dann-Alpes funcionando"}
 
 
-# RF1 – Crear reseña
 @app.post("/hoteles/{hotel_id}/resenas")
 def crear_resena(hotel_id: str, datos: dict):
-    hotel_exists(hotel_id)
-    _id = parse_id(hotel_id)
+    import logging
+    try:
+        hotel_exists(hotel_id)
+        _id = parse_id(hotel_id)
 
-    cliente_id = str(datos.get("clienteId", ""))
-    reserva_id = str(datos.get("reservaId", ""))
+        cliente_id = str(datos.get("clienteId", ""))
+        reserva_id = str(datos.get("reservaId", ""))
 
-    if not cliente_id or not reserva_id:
-        raise HTTPException(status_code=400, detail="clienteId y reservaId son obligatorios")
+        if not cliente_id or not reserva_id:
+            raise HTTPException(status_code=400, detail="clienteId y reservaId son obligatorios")
 
-    duplicado = hoteles_col.find_one({
-        "_id": _id,
-        "resenas": {"$elemMatch": {"clienteId": cliente_id, "reservaId": reserva_id}}
-    })
-    if duplicado:
-        raise HTTPException(status_code=409, detail="Ya existe una reseña para esta reserva")
+        duplicado = hoteles_col.find_one({
+            "_id": _id,
+            "resenas": {"$elemMatch": {"clienteId": cliente_id, "reservaId": reserva_id}}
+        })
+        if duplicado:
+            raise HTTPException(status_code=409, detail="Ya existe una reseña para esta reserva")
 
-    for campo in ["nota", "resenaRespecitva", "asunto"]:
-        if campo not in datos:
-            raise HTTPException(status_code=400, detail=f"Campo obligatorio faltante: {campo}")
+        for campo in ["nota", "resenaRespecitva", "asunto"]:
+            if campo not in datos:
+                raise HTTPException(status_code=400, detail=f"Campo obligatorio faltante: {campo}")
 
-    nota = parse_nota(datos.get("nota"))
-    ahora = datetime.utcnow().isoformat() + "Z"
-    resena_id = f"RES_{int(datetime.utcnow().timestamp() * 1000)}"
+        nota = parse_nota(datos.get("nota"))
+        ahora = datetime.utcnow().isoformat() + "Z"
+        resena_id = f"RES_{int(datetime.utcnow().timestamp() * 1000)}"
 
-    nueva_resena = {
-        "resenaId":         resena_id,
-        "fechaDeCreacion":  ahora[:10],
-        "horaDePublicado":  ahora,
-        "hotelDeControl":   {"nombreHotel": str(datos.get("nombreHotel", "")), "idHotel": str(hotel_id)},
-        "resenaRespecitva": str(datos["resenaRespecitva"]),
-        "clienteId":        cliente_id,
-        "reservaId":        reserva_id,
-        "usuarioPublico":   datos.get("usuarioPublico", {}),
-        "nota":             nota,
-        "publico":          True,
-        "asunto":           str(datos["asunto"]),
-        "utilidad":         0,
-        "votantes":         [],
-        "destacada":        False,
-        "respuestas":       []
-    }
+        nueva_resena = {
+            "resenaId":         resena_id,
+            "fechaDeCreacion":  ahora[:10],
+            "horaDePublicado":  ahora,
+            "hotelDeControl":   {"nombreHotel": str(datos.get("nombreHotel", "")), "idHotel": str(hotel_id)},
+            "resenaRespecitva": str(datos["resenaRespecitva"]),
+            "clienteId":        cliente_id,
+            "reservaId":        reserva_id,
+            "usuarioPublico":   datos.get("usuarioPublico", {}),
+            "nota":             nota,
+            "publico":          True,
+            "asunto":           str(datos["asunto"]),
+            "utilidad":         0,
+            "votantes":         [],
+            "destacada":        False,
+            "respuestas":       []
+        }
 
-    hoteles_col.update_one({"_id": _id}, {"$push": {"resenas": nueva_resena}})
-    return {"mensaje": "Reseña creada", "resenaId": resena_id}
+        logging.warning(f"nueva_resena: {nueva_resena}")
+        hoteles_col.update_one({"_id": _id}, {"$push": {"resenas": nueva_resena}})
+        return {"mensaje": "Reseña creada", "resenaId": resena_id}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"ERROR crear_resena: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 
 
 # RF2 – Editar reseña
