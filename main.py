@@ -28,7 +28,11 @@ admins_col        = db["administradores"]
 
 # ── HELPERS ──────────────────────────────────────────────────
 def hotel_exists(hotel_id: str):
-    h = hoteles_col.find_one({"_id": hotel_id})
+    try:
+        _id = int(hotel_id)
+    except ValueError:
+        _id = hotel_id
+    h = hoteles_col.find_one({"_id": _id})
     if not h:
         raise HTTPException(status_code=404, detail=f"Hotel '{hotel_id}' no encontrado")
     return h
