@@ -16,8 +16,7 @@ app.add_middleware(
 
 # ── CONEXIÓN MONGODB ─────────────────────────────────────────
 # Reemplazar con la URI real de MongoDB Atlas del grupo
-MONGO_URI = "mongodb+srv://<usuario>:<contrasena>@<cluster>.mongodb.net/?retryWrites=true&w=majority"
-client = MongoClient(MONGO_URI)
+mongodb+srv://iker0916:Inosuke0916!@dannalpes.xgshepm.mongodb.net/dannalpes?retryWrites=true&w=majority
 db = client["dannalpes"]
 
 hoteles_col       = db["hoteles"]
