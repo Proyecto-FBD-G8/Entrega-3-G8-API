@@ -55,8 +55,19 @@ def root():
 def crear_resena(hotel_id: str, datos: dict):
     import logging
     try:
-        hotel_exists(hotel_id)
         _id = parse_id(hotel_id)
+
+        # Si el hotel no existe en MongoDB, crearlo automáticamente
+        hotel = hoteles_col.find_one({"_id": _id})
+        if not hotel:
+            hoteles_col.insert_one({
+                "_id": _id,
+                "nombreHotel": str(datos.get("nombreHotel", f"Hotel {hotel_id}")),
+                "administradorEnControl": {"nombreAdmin": "", "idAdmin": ""},
+                "ubicacion": "",
+                "ciudad": str(datos.get("ciudad", "")),
+                "resenas": []
+            })
 
         cliente_id = str(datos.get("clienteId", ""))
         reserva_id = str(datos.get("reservaId", ""))
